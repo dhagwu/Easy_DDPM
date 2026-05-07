@@ -3,3 +3,4 @@ output/*.npz
 __pycache__/
 *.pyc
 .claude/
+韦祖源任务书.docx

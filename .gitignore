@@ -1,0 +1,5 @@
+output/*.pt
+output/*.npz
+__pycache__/
+*.pyc
+.claude/

@@ -1,0 +1,57 @@
+Group,Value,Method,MAE_mean,MAE_std,N
+source_domain,real,Least-Squares,8.682391,6.156409,63
+source_domain,real,Quality-Guided,7.6461096,5.623746,63
+source_domain,real,UNet Reg.,5.445331,3.7451477,63
+source_domain,real,DDPM (Ours),5.926603,3.9521244,63
+source_domain,synthetic,Least-Squares,21.935802,14.349528,17
+source_domain,synthetic,Quality-Guided,21.633343,15.015724,17
+source_domain,synthetic,UNet Reg.,9.358596,8.004659,17
+source_domain,synthetic,DDPM (Ours),11.712856,8.377584,17
+noise_level,observed,Least-Squares,8.682391,6.156409,63
+noise_level,observed,Quality-Guided,7.6461096,5.623746,63
+noise_level,observed,UNet Reg.,5.445331,3.7451477,63
+noise_level,observed,DDPM (Ours),5.926603,3.9521244,63
+noise_level,low,Least-Squares,32.15496,16.059584,5
+noise_level,low,Quality-Guided,31.66251,19.717712,5
+noise_level,low,UNet Reg.,13.874489,8.19551,5
+noise_level,low,DDPM (Ours),16.687796,8.677343,5
+noise_level,medium,Least-Squares,23.204996,13.166177,6
+noise_level,medium,Quality-Guided,21.666025,11.96659,6
+noise_level,medium,UNet Reg.,11.06321,8.816256,6
+noise_level,medium,DDPM (Ours),13.475479,8.948214,6
+noise_level,high,Least-Squares,12.150645,7.6137295,6
+noise_level,high,Quality-Guided,13.243015,9.067408,6
+noise_level,high,UNet Reg.,3.8907385,3.7177958,6
+noise_level,high,DDPM (Ours),5.804451,3.7298324,6
+gradient_level,observed,Least-Squares,8.682391,6.156409,63
+gradient_level,observed,Quality-Guided,7.6461096,5.623746,63
+gradient_level,observed,UNet Reg.,5.445331,3.7451477,63
+gradient_level,observed,DDPM (Ours),5.926603,3.9521244,63
+gradient_level,high,Least-Squares,37.017876,12.264794,5
+gradient_level,high,Quality-Guided,36.717987,14.965627,5
+gradient_level,high,UNet Reg.,17.837957,8.205068,5
+gradient_level,high,DDPM (Ours),20.658016,8.160703,5
+gradient_level,low,Least-Squares,7.1919184,3.689593,5
+gradient_level,low,Quality-Guided,8.498624,5.2998204,5
+gradient_level,low,UNet Reg.,1.9945816,1.1344091,5
+gradient_level,low,DDPM (Ours),3.447342,1.2480627,5
+gradient_level,medium,Least-Squares,21.694239,8.303873,7
+gradient_level,medium,Quality-Guided,20.240536,9.877608,7
+gradient_level,medium,UNet Reg.,8.561919,4.3906794,7
+gradient_level,medium,DDPM (Ours),11.227394,4.2229686,7
+deformation_type,observed,Least-Squares,8.682391,6.156409,63
+deformation_type,observed,Quality-Guided,7.6461096,5.623746,63
+deformation_type,observed,UNet Reg.,5.445331,3.7451477,63
+deformation_type,observed,DDPM (Ours),5.926603,3.9521244,63
+deformation_type,fault_step,Least-Squares,37.11035,10.452121,6
+deformation_type,fault_step,Quality-Guided,36.68153,12.994881,6
+deformation_type,fault_step,UNet Reg.,18.1924,6.2414136,6
+deformation_type,fault_step,DDPM (Ours),20.80409,6.554389,6
+deformation_type,ramp_bowl,Least-Squares,12.665724,8.57655,4
+deformation_type,ramp_bowl,Quality-Guided,13.974059,8.074086,4
+deformation_type,ramp_bowl,UNet Reg.,3.673327,2.4176314,4
+deformation_type,ramp_bowl,DDPM (Ours),5.488489,3.556647,4
+deformation_type,mogi,Least-Squares,16.373974,6.2048283,6
+deformation_type,mogi,Quality-Guided,15.250927,7.399248,6
+deformation_type,mogi,UNet Reg.,5.7701077,3.5181189,6
+deformation_type,mogi,DDPM (Ours),8.455395,3.272269,6

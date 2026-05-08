@@ -233,27 +233,15 @@ class DDPM(nn.Module):
     """Denoising Diffusion Probabilistic Model wrapper."""
 
     def __init__(self, model: UNet, num_timesteps=200, beta_start=1e-4, beta_end=0.02,
-                 device="cuda", cosine_schedule=False, masked_loss=False):
+                 device="cuda"):
         super().__init__()
         self.model = model
         self.num_timesteps = num_timesteps
         self.device = device
-        self.masked_loss = masked_loss
 
-        if cosine_schedule:
-            # Cosine schedule: alpha_cumprod(t) = cos²((t/T + s)/(1+s) * π/2) / cos²(s/(1+s) * π/2)
-            s = 0.008
-            t = torch.arange(num_timesteps, dtype=torch.float32)
-            ft = torch.cos(((t / num_timesteps + s) / (1.0 + s)) * (torch.pi / 2.0)) ** 2
-            alphas_cumprod = ft / ft[0]
-            betas = 1.0 - alphas_cumprod[1:] / alphas_cumprod[:-1]
-            betas = torch.cat([betas, 1.0 - alphas_cumprod[-1:] / alphas_cumprod[-2:-1]])
-            betas = torch.clamp(betas, max=0.999)
-            alphas = 1.0 - betas
-        else:
-            betas = torch.linspace(beta_start, beta_end, num_timesteps, dtype=torch.float32)
-            alphas = 1.0 - betas
-            alphas_cumprod = torch.cumprod(alphas, dim=0)
+        betas = torch.linspace(beta_start, beta_end, num_timesteps, dtype=torch.float32)
+        alphas = 1.0 - betas
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
 
         self.register_buffer("betas", betas)
         self.register_buffer("alphas", alphas)
@@ -375,18 +363,10 @@ class DDPM(nn.Module):
         return xt
 
     def forward(self, x0, condition):
-        """Training: sample t, noise, compute loss. Mask-aware if last cond channel is mask."""
+        """Training: sample t, noise, compute loss."""
         b = x0.shape[0]
         t = torch.randint(0, self.num_timesteps, (b,), device=x0.device)
         noise = torch.randn_like(x0)
         xt, noise = self.q_sample(x0, t, noise)
         noise_pred = self.model(xt, t, condition)
-
-        if self.masked_loss:
-            # last condition channel is the mask
-            mask = condition[:, -1:, :, :]
-            diff = (noise_pred - noise) ** 2
-            mask_sum = mask.sum() + 1e-8
-            return (diff * mask).sum() / mask_sum
-        else:
-            return F.mse_loss(noise_pred, noise)
+        return F.mse_loss(noise_pred, noise)

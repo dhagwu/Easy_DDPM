@@ -13,13 +13,10 @@ class InSARDataset(Dataset):
     """Loads .npz patches, returns wrapped-phase conditioning + unwrapped target."""
 
     def __init__(self, data_dir, split="train", image_size=128, num_samples=None,
-                 use_sincos=True, source_domain=None, predict_residual=False,
-                 cond_enhanced=False):
+                 use_sincos=True, source_domain=None):
         self.image_size = image_size
         self.use_sincos = use_sincos
         self.split = split
-        self.predict_residual = predict_residual
-        self.cond_enhanced = cond_enhanced
 
         file_dir = os.path.join(data_dir, split)
         all_files = sorted(glob.glob(os.path.join(file_dir, "*.npz")))
@@ -90,34 +87,11 @@ class InSARDataset(Dataset):
         mask = mask[top:top + self.image_size, left:left + self.image_size]
 
         if self.use_sincos:
-            channels = [np.sin(wrapped), np.cos(wrapped), coherence]
+            condition = np.stack([np.sin(wrapped), np.cos(wrapped), coherence], axis=0)
         else:
-            channels = [wrapped, coherence]
+            condition = np.stack([wrapped, coherence], axis=0)
 
-        # Enhanced conditioning: add coarse + gradients + mask
-        if getattr(self, 'cond_enhanced', False):
-            coarse = data["coarse_unwrapped"].astype(np.float32)
-            coarse = coarse[top:top + self.image_size, left:left + self.image_size]
-            # wrapped gradients (capture fringe structure)
-            gx = np.zeros_like(wrapped)
-            gy = np.zeros_like(wrapped)
-            gx[:, :-1] = np.arctan2(
-                np.sin(wrapped[:, 1:] - wrapped[:, :-1]),
-                np.cos(wrapped[:, 1:] - wrapped[:, :-1]))
-            gy[:-1, :] = np.arctan2(
-                np.sin(wrapped[1:, :] - wrapped[:-1, :]),
-                np.cos(wrapped[1:, :] - wrapped[:-1, :]))
-            channels.extend([coarse, gx, gy, mask])
-        condition = np.stack(channels, axis=0)
-
-        if self.predict_residual:
-            coarse = data["coarse_unwrapped"].astype(np.float32)
-            coarse = coarse[top:top + self.image_size, left:left + self.image_size]
-            target = (unwrapped - coarse)[np.newaxis, ...]  # residual
-            extra = coarse[np.newaxis, ...]
-        else:
-            target = unwrapped[np.newaxis, ...]
-            extra = np.zeros((1, self.image_size, self.image_size), dtype=np.float32)  # placeholder
+        target = unwrapped[np.newaxis, ...]
 
         # cache meta on first load
         if idx not in self._meta_cache:
@@ -133,7 +107,7 @@ class InSARDataset(Dataset):
                 "valid_ratio": float(data["valid_ratio"]),
             }
 
-        return torch.from_numpy(condition), torch.from_numpy(target), torch.from_numpy(extra)
+        return torch.from_numpy(condition), torch.from_numpy(target)
 
 
 def make_dataloaders(config):
@@ -143,16 +117,12 @@ def make_dataloaders(config):
         image_size=config.IMAGE_SIZE,
         num_samples=config.NUM_TRAIN,
         use_sincos=config.USE_SINCOS,
-        predict_residual=config.PREDICT_RESIDUAL,
-        cond_enhanced=config.COND_ENHANCED,
     )
     ds_val = InSARDataset(
         config.DATA_DIR, split="val",
         image_size=config.IMAGE_SIZE,
         num_samples=config.NUM_VAL,
         use_sincos=config.USE_SINCOS,
-        predict_residual=config.PREDICT_RESIDUAL,
-        cond_enhanced=config.COND_ENHANCED,
     )
     dl_train = torch.utils.data.DataLoader(
         ds_train, batch_size=config.BATCH_SIZE, shuffle=True,
@@ -172,6 +142,4 @@ def make_test_dataset(config):
         image_size=config.IMAGE_SIZE,
         num_samples=config.NUM_TEST,
         use_sincos=config.USE_SINCOS,
-        predict_residual=config.PREDICT_RESIDUAL,
-        cond_enhanced=config.COND_ENHANCED,
     )

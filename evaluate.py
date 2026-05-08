@@ -72,9 +72,7 @@ def run_evaluation():
     print(f"Device: {device}")
 
     ds = InSARDataset(cfg.DATA_DIR, split="val", image_size=cfg.IMAGE_SIZE,
-                       num_samples=cfg.NUM_TEST, use_sincos=cfg.USE_SINCOS,
-                       predict_residual=cfg.PREDICT_RESIDUAL,
-                       cond_enhanced=cfg.COND_ENHANCED)
+                       num_samples=cfg.NUM_TEST, use_sincos=cfg.USE_SINCOS)
     n = len(ds)
     print(f"Evaluating on {n} validation samples")
 
@@ -91,23 +89,21 @@ def run_evaluation():
 
     # ── Helper: load per-sample data ─────────────────────
     def sample_data(idx):
-        cond, target, extra = ds[idx]
+        cond, target = ds[idx]
         data = np.load(ds.files[idx])
-        gt_unwrapped = target.squeeze().numpy()  # either unwrapped or residual
+        gt_unwrapped = target.squeeze().numpy()
         mask = _crop(data["mask"].astype(np.float32))
         wrapped_obs = _crop(data["wrapped"].astype(np.float32))
         coarse = _crop(data["coarse_unwrapped"].astype(np.float32))
         diff = float(data["difficulty_score"])
-        # For residual mode, gt_unwrapped is residual; full unwrapped = coarse + residual
-        gt_unwrapped = coarse + gt_unwrapped if cfg.PREDICT_RESIDUAL else gt_unwrapped
-        return cond, gt_unwrapped, mask, wrapped_obs, coarse, diff, gt_unwrapped
+        return cond, gt_unwrapped, mask, wrapped_obs, coarse, diff
 
     # ── 1. Least-Squares ─────────────────────────────────
     if "ls_preds" not in results:
         print("\n[1/4] Least-Squares baseline...")
         ls_preds = np.zeros((n, cfg.IMAGE_SIZE, cfg.IMAGE_SIZE), dtype=np.float32)
         for idx in tqdm(range(n)):
-            _, _, _, _, coarse, _, _ = sample_data(idx)
+            _, _, _, _, coarse, _ = sample_data(idx)
             ls_preds[idx] = coarse
         results["ls_preds"] = ls_preds
         save_cache(results)
@@ -134,12 +130,10 @@ def run_evaluation():
         model = load_unet(device=device)
         unet_preds = np.zeros((n, cfg.IMAGE_SIZE, cfg.IMAGE_SIZE), dtype=np.float32)
         for idx in tqdm(range(n)):
-            cond, _, _, _, coarse, _, _ = sample_data(idx)
-            # UNet was trained with 3ch; use first 3 channels if condition is enhanced
-            cond_3ch = cond[:3] if cond.shape[0] > 3 else cond
+            cond, _, _, _, coarse, _ = sample_data(idx)
             with torch.no_grad():
-                out = model(cond_3ch.unsqueeze(0).to(device)).squeeze().cpu().numpy()
-            unet_preds[idx] = coarse + out if cfg.PREDICT_RESIDUAL else out
+                out = model(cond.unsqueeze(0).to(device)).squeeze().cpu().numpy()
+            unet_preds[idx] = out
         results["unet_preds"] = unet_preds
         save_cache(results)
 
@@ -152,14 +146,14 @@ def run_evaluation():
         ddpm = _load_ddpm(device)
         ddpm_preds = np.zeros((n, cfg.IMAGE_SIZE, cfg.IMAGE_SIZE), dtype=np.float32)
         for idx in tqdm(range(n)):
-            cond, _, _, _, coarse, _, _ = sample_data(idx)
+            cond, _, _, _, coarse, _ = sample_data(idx)
             cond_gpu = cond.unsqueeze(0).to(device)
             if cfg.USE_DDIM:
                 out = ddpm.ddim_sample(cond_gpu, ddim_steps=cfg.DDIM_STEPS,
                                         eta=cfg.DDIM_ETA, progress=False).squeeze().cpu().numpy()
             else:
                 out = ddpm.sample(cond_gpu, progress=False).squeeze().cpu().numpy()
-            ddpm_preds[idx] = coarse + out if cfg.PREDICT_RESIDUAL else out
+            ddpm_preds[idx] = out
         results[cache_key] = ddpm_preds
         save_cache(results)
 

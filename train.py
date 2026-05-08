@@ -39,7 +39,7 @@ def train_ddpm():
 
     ddpm = DDPM(unet, num_timesteps=cfg.NUM_TIMESTEPS, beta_start=cfg.BETA_START,
                 beta_end=cfg.BETA_END, device=device,
-                cosine_schedule=cfg.COSINE_SCHEDULE, masked_loss=cfg.MASKED_LOSS).to(device)
+                ).to(device)
 
     ema_unet = UNet(
         in_channels=1, cond_channels=cfg.COND_CHANNELS, out_channels=cfg.OUT_CHANNELS,
@@ -52,7 +52,7 @@ def train_ddpm():
 
     ema_ddpm = DDPM(ema_unet, num_timesteps=cfg.NUM_TIMESTEPS, beta_start=cfg.BETA_START,
                     beta_end=cfg.BETA_END, device=device,
-                    cosine_schedule=cfg.COSINE_SCHEDULE, masked_loss=cfg.MASKED_LOSS).to(device)
+                    ).to(device)
 
     print(f"Model params: {sum(p.numel() for p in unet.parameters()):,}")
     opt = AdamW(unet.parameters(), lr=cfg.LEARNING_RATE, weight_decay=1e-5)
@@ -68,7 +68,7 @@ def train_ddpm():
         train_loss = 0.0
         pbar = tqdm(dl_train, desc=f"DDPM Epoch {epoch}/{cfg.NUM_EPOCHS_DDPM}")
         for batch in pbar:
-            cond, target, extra = [b.to(device) for b in batch]
+            cond, target = [b.to(device) for b in batch]
             if scaler:
                 with torch.cuda.amp.autocast():
                     loss = ddpm(target, cond)
@@ -92,7 +92,7 @@ def train_ddpm():
         val_loss = 0.0
         with torch.no_grad():
             for batch in dl_val:
-                cond, target, extra = [b.to(device) for b in batch]
+                cond, target = [b.to(device) for b in batch]
                 val_loss += ema_ddpm(target, cond).item()
         val_loss /= len(dl_val)
         sched.step()

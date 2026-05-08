@@ -177,7 +177,7 @@ def train_unet():
         train_loss = 0.0
         pbar = tqdm(dl_train, desc=f"UNet Epoch {epoch}/{cfg.NUM_EPOCHS_UNET}")
         for batch in pbar:
-            cond, target, extra = [b.to(device) for b in batch]
+            cond, target = [b.to(device) for b in batch]
             pred = model(cond)
             loss = F.mse_loss(pred, target) + 0.5 * l1_loss(pred, target)
             opt.zero_grad()
@@ -194,7 +194,7 @@ def train_unet():
         val_loss = 0.0
         with torch.no_grad():
             for batch in dl_val:
-                cond, target, extra = [b.to(device) for b in batch]
+                cond, target = [b.to(device) for b in batch]
                 pred = model(cond)
                 val_loss += F.l1_loss(pred, target).item()
         val_loss /= len(dl_val)
@@ -208,7 +208,7 @@ def train_unet():
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            ckpt_name = "unet_residual_best.pt" if cfg.PREDICT_RESIDUAL else "unet_best.pt"
+            ckpt_name = "unet_best.pt"
             torch.save(model.state_dict(), os.path.join(cfg.OUTPUT_DIR, ckpt_name))
 
         if epoch % cfg.SAVE_EVERY == 0:
